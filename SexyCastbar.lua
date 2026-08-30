@@ -179,6 +179,11 @@ local function BuildFrame()
         darkR:SetRotation(math.rad(math.max(alpha, 180) - 180))
         hand:SetRotation(math.rad(alpha))
 
+        -- The ring blinks while casting: a soft brightness pulse on the
+        -- unconsumed metal (~0.8s cycle); darkness, needle, and text stay
+        -- steady so progress is never obscured.
+        ring:SetAlpha(0.775 + 0.225 * math.sin(GetTime() * 7.85))
+
         self.acc = (self.acc or 0) + elapsed
         if self.acc < 0.05 then return end
         self.acc = 0
@@ -303,6 +308,7 @@ function Finish(kind)
     state = nil
     RestorePortrait()
     hand:Hide()
+    ring:SetAlpha(1)
     timer:SetText("")
     if kind ~= "quiet" then
         local color = kind == "fail" and COLOR_FAIL or COLOR_DONE
@@ -342,6 +348,7 @@ local function SetUnlocked(on)
         darkL:SetRotation(math.rad(-180))
         darkR:SetRotation(0)
         hand:Hide()
+        ring:SetAlpha(1)
         icon:SetTexture(HEARTH_ICON)
         ring:SetVertexColor(COLOR_UNLOCKED[1], COLOR_UNLOCKED[2], COLOR_UNLOCKED[3])
         nameText:SetText("drag me - /scb locks")
