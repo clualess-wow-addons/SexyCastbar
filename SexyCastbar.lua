@@ -15,8 +15,12 @@ local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local FALLBACK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local HEARTH_ICON = "Interface\\Icons\\INV_Misc_Rune_01"
 
-local COLOR_CAST = { 1, 0.8, 0.25 }
-local COLOR_CHANNEL = { 0.3, 0.9, 0.8 }
+-- The ring's color lerps across the cast: casts heat from ember red
+-- through gold to green at completion; channels cool from teal to blue
+-- as they drain.
+local CAST_GRADIENT = { { 1, 0.35, 0.15 }, { 0.4, 1, 0.35 } }
+local CHANNEL_GRADIENT = { { 0.3, 0.9, 0.8 }, { 0.25, 0.45, 1 } }
+local COLOR_UNLOCKED = { 1, 0.8, 0.25 }
 local COLOR_FAIL = { 1, 0.2, 0.2 }
 local COLOR_DONE = { 1, 1, 1 }
 
@@ -137,6 +141,15 @@ local function BuildFrame()
             return
         end
         if remaining < 0 then remaining = 0 end
+
+        local p = state.duration > 0 and (1 - remaining / state.duration) or 1
+        if p < 0 then p = 0 elseif p > 1 then p = 1 end
+        local c0, c1 = state.gradient[1], state.gradient[2]
+        ring:SetVertexColor(
+            c0[1] + (c1[1] - c0[1]) * p,
+            c0[2] + (c1[2] - c0[2]) * p,
+            c0[3] + (c1[3] - c0[3]) * p)
+
         if remaining >= 10 then
             timer:SetText(string.format("%d", remaining))
         else
@@ -161,11 +174,12 @@ local function StartDisplay(name, texture, startMS, endMS, channel, castID)
         duration = duration,
         channel = channel,
         castID = castID,
+        gradient = channel and CHANNEL_GRADIENT or CAST_GRADIENT,
     }
 
     icon:SetTexture(texture or FALLBACK_ICON)
-    local color = channel and COLOR_CHANNEL or COLOR_CAST
-    ring:SetVertexColor(color[1], color[2], color[3])
+    local c0 = state.gradient[1]
+    ring:SetVertexColor(c0[1], c0[2], c0[3])
     nameText:SetText(name or "")
     timer:SetTextColor(1, 1, 1)
     timer:SetText("")
@@ -221,7 +235,7 @@ local function SetUnlocked(on)
         state = nil
         cooldown:Clear()
         icon:SetTexture(HEARTH_ICON)
-        ring:SetVertexColor(COLOR_CAST[1], COLOR_CAST[2], COLOR_CAST[3])
+        ring:SetVertexColor(COLOR_UNLOCKED[1], COLOR_UNLOCKED[2], COLOR_UNLOCKED[3])
         nameText:SetText("drag me - /scb locks")
         timer:SetText("")
         fader:Stop()
