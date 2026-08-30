@@ -16,10 +16,18 @@ disabled while the addon is loaded.
 - The sweep edge line acts as the watch hand.
 - Survives `/reload` and loading screens mid-cast.
 
+## Portrait mode
+
+`/scb portrait` anchors the watch face onto the player portrait: the ring
+wraps your character's face like a bezel, the countdown shrinks into a
+"date window" at 6 o'clock, and the spell icon becomes a small gem at
+12 o'clock. `/scb portrait` again detaches back to the floating face.
+
 ## Commands
 
 - `/scb` (or `/sexycastbar`) — unlock: the face appears and can be dragged;
-  `/scb` again locks it. Position is saved.
+  `/scb` again locks it. Position is saved. (Floating mode only.)
+- `/scb portrait` — toggle wrapping the player portrait.
 - `/scb test` — play a fake 5-second cast to preview the look.
 
 ## Install

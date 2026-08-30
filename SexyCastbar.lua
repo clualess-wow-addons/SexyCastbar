@@ -26,6 +26,8 @@ local COLOR_DONE = { 1, 1, 1 }
 
 local timerFont = CreateFont("SexyCastbarTimerFont")
 timerFont:SetFont("Fonts\\ARIALN.TTF", 20, "OUTLINE")
+local timerFontSmall = CreateFont("SexyCastbarTimerFontSmall")
+timerFontSmall:SetFont("Fonts\\ARIALN.TTF", 14, "OUTLINE")
 local nameFont = CreateFont("SexyCastbarNameFont")
 nameFont:SetFont("Fonts\\ARIALN.TTF", 11, "OUTLINE")
 
@@ -49,13 +51,7 @@ local function BuildFrame()
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
     frame:RegisterForDrag("LeftButton")
-
-    local pos = SexyCastbarDB.pos
-    if pos then
-        frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4])
-    else
-        frame:SetPoint("CENTER", 0, -160)
-    end
+    -- Position, element sizes, and layout come from ApplyMode.
 
     -- Spell icon shown at full brightness; a small smoked-glass badge sits
     -- behind just the countdown so the icon stays clearly visible.
@@ -97,7 +93,7 @@ local function BuildFrame()
 
     timer = cooldown:CreateFontString(nil, "OVERLAY")
     timer:SetFontObject(timerFont)
-    timer:SetPoint("CENTER")
+    timer:SetPoint("CENTER", glass, "CENTER")
 
     nameText = frame:CreateFontString(nil, "OVERLAY")
     nameText:SetFontObject(nameFont)
@@ -121,7 +117,11 @@ local function BuildFrame()
         flashTex:Hide()
     end)
 
-    frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    frame:SetScript("OnDragStart", function(self)
+        if SexyCastbarDB.mode ~= "portrait" then
+            self:StartMoving()
+        end
+    end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         SavePosition()
@@ -164,6 +164,40 @@ local function BuildFrame()
     end)
 
     frame:Hide()
+end
+
+-- Two layouts. Free: the face floats where the user dragged it, spell icon
+-- filling the center. Portrait: the ring wraps the PlayerFrame portrait
+-- like a watch bezel - your character's face is the center, the countdown
+-- shrinks into a "date window" at 6 o'clock, and the spell icon becomes a
+-- small gem at 12 o'clock.
+local function ApplyMode()
+    local portraitMode = SexyCastbarDB.mode == "portrait" and PlayerPortrait
+    frame:ClearAllPoints()
+    icon:ClearAllPoints()
+    glass:ClearAllPoints()
+    if portraitMode then
+        frame:SetPoint("CENTER", PlayerPortrait, "CENTER")
+        icon:SetSize(22, 22)
+        icon:SetPoint("CENTER", frame, "TOP", 0, -8)
+        glass:SetSize(30, 30)
+        glass:SetPoint("CENTER", frame, "BOTTOM", 0, 10)
+        timer:SetFontObject(timerFontSmall)
+        nameText:Hide()
+    else
+        local pos = SexyCastbarDB.pos
+        if pos then
+            frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4])
+        else
+            frame:SetPoint("CENTER", 0, -160)
+        end
+        icon:SetSize(ICON_SIZE, ICON_SIZE)
+        icon:SetPoint("CENTER")
+        glass:SetSize(GLASS_SIZE, GLASS_SIZE)
+        glass:SetPoint("CENTER")
+        timer:SetFontObject(timerFont)
+        nameText:Show()
+    end
 end
 
 local function StartDisplay(name, texture, startMS, endMS, channel, castID)
@@ -257,7 +291,9 @@ events:SetScript("OnEvent", function(self, event, arg1, castGUID)
         self:UnregisterEvent("ADDON_LOADED")
 
         SexyCastbarDB = SexyCastbarDB or {}
+        SexyCastbarDB.mode = SexyCastbarDB.mode or "free"
         BuildFrame()
+        ApplyMode()
 
         -- The default bar only appears in response to events; without them
         -- it stays hidden for good. Recoverable by disabling the addon.
@@ -329,6 +365,22 @@ SlashCmdList["SEXYCASTBAR"] = function(msg)
     if msg == "test" then
         local now = GetTime() * 1000
         StartDisplay("SexyCastbar", HEARTH_ICON, now, now + 5000, false, "test")
+    elseif msg == "portrait" then
+        if SexyCastbarDB.mode == "portrait" then
+            SexyCastbarDB.mode = "free"
+            Print("Detached - floating at the saved position.")
+        elseif PlayerPortrait then
+            SexyCastbarDB.mode = "portrait"
+            Print("Wrapping the player portrait. /scb portrait detaches.")
+        else
+            Print("No player portrait found (unit frame addon?).")
+        end
+        if unlocked then
+            SetUnlocked(false)
+        end
+        ApplyMode()
+    elseif SexyCastbarDB.mode == "portrait" then
+        Print("Anchored to the player portrait - /scb portrait detaches, /scb test previews.")
     else
         SetUnlocked(not unlocked)
     end
