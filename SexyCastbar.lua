@@ -31,7 +31,7 @@ timerFontSmall:SetFont("Fonts\\ARIALN.TTF", 14, "OUTLINE")
 local nameFont = CreateFont("SexyCastbarNameFont")
 nameFont:SetFont("Fonts\\ARIALN.TTF", 11, "OUTLINE")
 
-local frame, ring, glass, icon, cooldown, timer, nameText, flashTex, fader
+local frame, ring, glass, icon, darkL, darkR, hand, timer, nameText, flashTex, fader
 local state    -- { endTime, duration, channel, castID } while a cast shows
 local unlocked = false
 local Finish   -- forward: the OnUpdate safety net calls it
@@ -73,25 +73,40 @@ local function BuildFrame()
     ring:SetTexture(MEDIA .. "ring")
     ring:SetAllPoints()
 
-    -- The Cooldown widget's swipe, shaped by the ring texture itself, eats
-    -- the ring clockwise; SetReverse makes the dark area grow with time.
-    cooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-    cooldown:SetAllPoints()
-    cooldown.noCooldownCount = true
-    if cooldown.SetHideCountdownNumbers then
-        cooldown:SetHideCountdownNumbers(true)
-    end
-    cooldown:SetSwipeTexture(MEDIA .. "ring")
-    cooldown:SetSwipeColor(0, 0, 0, 0.82)
-    cooldown:SetReverse(true)
-    if cooldown.SetDrawEdge then
-        cooldown:SetDrawEdge(true) -- the sweep line doubles as a watch hand
-    end
-    if cooldown.SetEdgeTexture then
-        cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")
-    end
+    -- Counterclockwise sweep. The Cooldown widget only animates clockwise
+    -- (SetRotation moves the start, never the direction), so the consumed
+    -- area is two black half-ring textures behind static half masks,
+    -- rotated in lockstep: each mask clips its rotating half to a wedge,
+    -- and their union grows counterclockwise from 12 o'clock with no
+    -- phase-switching needed.
+    local maskL = frame:CreateMaskTexture()
+    maskL:SetTexture(MEDIA .. "halfmask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    maskL:SetAllPoints()
+    local maskR = frame:CreateMaskTexture()
+    maskR:SetTexture(MEDIA .. "halfmask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    maskR:SetAllPoints()
+    maskR:SetTexCoord(1, 0, 0, 1) -- mirrored: clips to the right half
 
-    timer = cooldown:CreateFontString(nil, "OVERLAY")
+    darkL = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    darkL:SetTexture(MEDIA .. "ringhalf")
+    darkL:SetAllPoints()
+    darkL:SetVertexColor(0, 0, 0, 0.82)
+    darkL:AddMaskTexture(maskL)
+
+    darkR = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    darkR:SetTexture(MEDIA .. "ringhalf")
+    darkR:SetAllPoints()
+    darkR:SetVertexColor(0, 0, 0, 0.82)
+    darkR:AddMaskTexture(maskR)
+
+    -- The watch hand: a needle riding the sweep's leading edge.
+    hand = frame:CreateTexture(nil, "ARTWORK", nil, 2)
+    hand:SetTexture(MEDIA .. "hand")
+    hand:SetAllPoints()
+    hand:SetVertexColor(1, 0.95, 0.8, 0.9)
+    hand:Hide()
+
+    timer = frame:CreateFontString(nil, "OVERLAY")
     timer:SetFontObject(timerFont)
     timer:SetPoint("CENTER", glass, "CENTER")
 
@@ -128,9 +143,6 @@ local function BuildFrame()
     end)
 
     frame:SetScript("OnUpdate", function(self, elapsed)
-        self.acc = (self.acc or 0) + elapsed
-        if self.acc < 0.05 then return end
-        self.acc = 0
         if not state then return end
 
         local remaining = state.endTime - GetTime()
@@ -144,6 +156,18 @@ local function BuildFrame()
 
         local p = state.duration > 0 and (1 - remaining / state.duration) or 1
         if p < 0 then p = 0 elseif p > 1 then p = 1 end
+
+        -- The sweep rotates every frame so it stays smooth; text and
+        -- colors below keep the 0.05s throttle.
+        local rot = math.rad(p * 360 - 180)
+        darkL:SetRotation(rot)
+        darkR:SetRotation(rot)
+        hand:SetRotation(math.rad(p * 360))
+
+        self.acc = (self.acc or 0) + elapsed
+        if self.acc < 0.05 then return end
+        self.acc = 0
+
         local c0, c1 = state.gradient[1], state.gradient[2]
         ring:SetVertexColor(
             c0[1] + (c1[1] - c0[1]) * p,
@@ -225,7 +249,6 @@ local function RestorePortrait()
 end
 
 local function StartDisplay(name, texture, startMS, endMS, channel, castID)
-    local start = startMS / 1000
     local duration = (endMS - startMS) / 1000
     state = {
         endTime = endMS / 1000,
@@ -243,7 +266,10 @@ local function StartDisplay(name, texture, startMS, endMS, channel, castID)
     nameText:SetText(name or "")
     timer:SetTextColor(1, 1, 1)
     timer:SetText("")
-    cooldown:SetCooldown(start, duration)
+    darkL:SetRotation(math.rad(-180))
+    darkR:SetRotation(math.rad(-180))
+    hand:SetRotation(0)
+    hand:Show()
 
     fader:Stop()
     flashTex:Hide()
@@ -257,7 +283,7 @@ function Finish(kind)
     if not state then return end
     state = nil
     RestorePortrait()
-    cooldown:Clear()
+    hand:Hide()
     timer:SetText("")
     if kind ~= "quiet" then
         local color = kind == "fail" and COLOR_FAIL or COLOR_DONE
@@ -294,7 +320,9 @@ local function SetUnlocked(on)
     frame:EnableMouse(on)
     if on then
         state = nil
-        cooldown:Clear()
+        darkL:SetRotation(math.rad(-180))
+        darkR:SetRotation(math.rad(-180))
+        hand:Hide()
         icon:SetTexture(HEARTH_ICON)
         ring:SetVertexColor(COLOR_UNLOCKED[1], COLOR_UNLOCKED[2], COLOR_UNLOCKED[3])
         nameText:SetText("drag me - /scb locks")
