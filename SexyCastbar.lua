@@ -64,49 +64,62 @@ local function BuildFrame()
     mask:SetAllPoints(icon)
     icon:AddMaskTexture(mask)
 
-    glass = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
-    glass:SetTexture(MEDIA .. "glass")
-    glass:SetSize(GLASS_SIZE, GLASS_SIZE)
-    glass:SetPoint("CENTER")
-
     ring = frame:CreateTexture(nil, "ARTWORK")
     ring:SetTexture(MEDIA .. "ring")
     ring:SetAllPoints()
 
-    -- Counterclockwise sweep. The Cooldown widget only animates clockwise
-    -- (SetRotation moves the start, never the direction), so the consumed
-    -- area is two black half-ring textures behind static half masks,
-    -- rotated in lockstep: each mask clips its rotating half to a wedge,
-    -- and their union grows counterclockwise from 12 o'clock with no
-    -- phase-switching needed.
-    local maskL = frame:CreateMaskTexture()
-    maskL:SetTexture(MEDIA .. "halfmask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    maskL:SetAllPoints()
-    local maskR = frame:CreateMaskTexture()
-    maskR:SetTexture(MEDIA .. "halfmask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    maskR:SetAllPoints()
-    maskR:SetTexCoord(1, 0, 0, 1) -- mirrored: clips to the right half
+    -- Counterclockwise sweep. The Cooldown widget only animates clockwise,
+    -- and mask textures follow SetRotation (which is why the mask-based
+    -- version leaked), so the consumed area is two black half-ring
+    -- textures rotating inside SetClipsChildren frames: the scissor
+    -- rectangle is geometric and cannot rotate with them. First half of
+    -- the cast the left texture rotates, growing a wedge from 12 o'clock
+    -- down the left side (the right one is parked fully outside its
+    -- clip); second half the left parks fully dark and the right rotates
+    -- up its own side.
+    local clipL = CreateFrame("Frame", nil, frame)
+    clipL:SetClipsChildren(true)
+    clipL:SetFrameLevel(frame:GetFrameLevel() + 1)
+    clipL:SetPoint("TOPLEFT")
+    clipL:SetPoint("BOTTOMRIGHT", frame, "BOTTOM")
 
-    darkL = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    local clipR = CreateFrame("Frame", nil, frame)
+    clipR:SetClipsChildren(true)
+    clipR:SetFrameLevel(frame:GetFrameLevel() + 1)
+    clipR:SetPoint("TOPRIGHT")
+    clipR:SetPoint("BOTTOMLEFT", frame, "BOTTOM")
+
+    darkL = clipL:CreateTexture(nil, "ARTWORK")
     darkL:SetTexture(MEDIA .. "ringhalf")
-    darkL:SetAllPoints()
+    darkL:SetPoint("TOPLEFT", frame)
+    darkL:SetPoint("BOTTOMRIGHT", frame)
     darkL:SetVertexColor(0, 0, 0, 0.82)
-    darkL:AddMaskTexture(maskL)
 
-    darkR = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    darkR = clipR:CreateTexture(nil, "ARTWORK")
     darkR:SetTexture(MEDIA .. "ringhalf")
-    darkR:SetAllPoints()
+    darkR:SetPoint("TOPLEFT", frame)
+    darkR:SetPoint("BOTTOMRIGHT", frame)
     darkR:SetVertexColor(0, 0, 0, 0.82)
-    darkR:AddMaskTexture(maskR)
+
+    -- Everything that must draw above the darkness lives above the clip
+    -- frames: the needle, the countdown badge, and the end flash.
+    local top = CreateFrame("Frame", nil, frame)
+    top:SetFrameLevel(frame:GetFrameLevel() + 2)
+    top:SetAllPoints()
 
     -- The watch hand: a needle riding the sweep's leading edge.
-    hand = frame:CreateTexture(nil, "ARTWORK", nil, 2)
+    hand = top:CreateTexture(nil, "ARTWORK")
     hand:SetTexture(MEDIA .. "hand")
     hand:SetAllPoints()
     hand:SetVertexColor(1, 0.95, 0.8, 0.9)
     hand:Hide()
 
-    timer = frame:CreateFontString(nil, "OVERLAY")
+    glass = top:CreateTexture(nil, "BACKGROUND")
+    glass:SetTexture(MEDIA .. "glass")
+    glass:SetSize(GLASS_SIZE, GLASS_SIZE)
+    glass:SetPoint("CENTER")
+
+    timer = top:CreateFontString(nil, "OVERLAY")
     timer:SetFontObject(timerFont)
     timer:SetPoint("CENTER", glass, "CENTER")
 
@@ -116,7 +129,7 @@ local function BuildFrame()
 
     -- End-of-cast feedback: an additive copy of the ring, flashed white on
     -- success or red on interrupt while the whole face fades out.
-    flashTex = frame:CreateTexture(nil, "OVERLAY")
+    flashTex = top:CreateTexture(nil, "OVERLAY")
     flashTex:SetTexture(MEDIA .. "ring")
     flashTex:SetBlendMode("ADD")
     flashTex:SetAllPoints()
@@ -204,13 +217,16 @@ local function ApplyMode()
     glass:ClearAllPoints()
     if portraitMode then
         frame:SetPoint("CENTER", PlayerPortrait, "CENTER")
+        -- Sized so the ring rides the portrait's inner perimeter instead
+        -- of wrapping around the outside (restored from a703961).
+        frame:SetSize(62, 62)
         -- Our own icon stays hidden: the spell icon is written into the
         -- PlayerPortrait texture itself for the cast (see SwapPortrait),
         -- rendering under the frame art like a native portrait.
         icon:Hide()
         icon:SetPoint("CENTER")
-        glass:SetSize(30, 30)
-        glass:SetPoint("CENTER", frame, "BOTTOM", 0, 10)
+        glass:SetSize(26, 26)
+        glass:SetPoint("CENTER", frame, "BOTTOM", 0, 4)
         timer:SetFontObject(timerFontSmall)
         nameText:Hide()
     else
@@ -220,6 +236,7 @@ local function ApplyMode()
         else
             frame:SetPoint("CENTER", 0, -160)
         end
+        frame:SetSize(RING_SIZE, RING_SIZE)
         icon:Show()
         icon:SetSize(ICON_SIZE, ICON_SIZE)
         icon:SetPoint("CENTER")
