@@ -1,0 +1,8 @@
+## Interface: 11505, 11506, 11507, 11508, 11509
+## Title: SexyCastbar
+## Notes: Replaces the player cast bar with a watch face - a ring consumed clockwise with a seconds timer in the center.
+## Author: clualess-wow-addons
+## Version: @project-version@
+## SavedVariables: SexyCastbarDB
+
+SexyCastbar.lua
