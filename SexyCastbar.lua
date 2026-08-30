@@ -168,9 +168,9 @@ end
 
 -- Two layouts. Free: the face floats where the user dragged it, spell icon
 -- filling the center. Portrait: the ring wraps the PlayerFrame portrait
--- like a watch bezel - your character's face is the center, the countdown
--- shrinks into a "date window" at 6 o'clock, and the spell icon becomes a
--- small gem at 12 o'clock.
+-- like a watch bezel - the spell icon covers the character's face for the
+-- duration of the cast, and the countdown shrinks into a "date window" at
+-- 6 o'clock.
 local function ApplyMode()
     local portraitMode = SexyCastbarDB.mode == "portrait" and PlayerPortrait
     frame:ClearAllPoints()
@@ -178,8 +178,8 @@ local function ApplyMode()
     glass:ClearAllPoints()
     if portraitMode then
         frame:SetPoint("CENTER", PlayerPortrait, "CENTER")
-        icon:SetSize(22, 22)
-        icon:SetPoint("CENTER", frame, "TOP", 0, -8)
+        icon:SetSize(62, 62) -- fills the ring's hole, covering the portrait
+        icon:SetPoint("CENTER")
         glass:SetSize(30, 30)
         glass:SetPoint("CENTER", frame, "BOTTOM", 0, 10)
         timer:SetFontObject(timerFontSmall)

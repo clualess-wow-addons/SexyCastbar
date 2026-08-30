@@ -19,9 +19,10 @@ disabled while the addon is loaded.
 ## Portrait mode
 
 `/scb portrait` anchors the watch face onto the player portrait: the ring
-wraps your character's face like a bezel, the countdown shrinks into a
-"date window" at 6 o'clock, and the spell icon becomes a small gem at
-12 o'clock. `/scb portrait` again detaches back to the floating face.
+wraps your character's portrait like a bezel, the spell or item icon covers
+the portrait for the duration of the cast, and the countdown shrinks into a
+"date window" at 6 o'clock. `/scb portrait` again detaches back to the
+floating face.
 
 ## Commands
 
