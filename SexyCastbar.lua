@@ -179,10 +179,10 @@ local function BuildFrame()
         darkR:SetRotation(math.rad(math.max(alpha, 180) - 180))
         hand:SetRotation(math.rad(alpha))
 
-        -- The ring blinks while casting: a soft brightness pulse on the
-        -- unconsumed metal (~0.8s cycle); darkness, needle, and text stay
-        -- steady so progress is never obscured.
-        ring:SetAlpha(0.775 + 0.225 * math.sin(GetTime() * 7.85))
+        -- The ring blinks while casting: a hard two-state blink (bright
+        -- 0.55s, dim 0.25s - the TANKING rhythm); darkness, needle, and
+        -- text stay steady so progress is never obscured.
+        ring:SetAlpha(GetTime() % 0.8 < 0.55 and 1 or 0.35)
 
         self.acc = (self.acc or 0) + elapsed
         if self.acc < 0.05 then return end
