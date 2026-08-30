@@ -178,7 +178,10 @@ local function ApplyMode()
     glass:ClearAllPoints()
     if portraitMode then
         frame:SetPoint("CENTER", PlayerPortrait, "CENTER")
-        icon:SetSize(62, 62) -- fills the ring's hole, covering the portrait
+        -- Our own icon stays hidden: the spell icon is written into the
+        -- PlayerPortrait texture itself for the cast (see SwapPortrait),
+        -- rendering under the frame art like a native portrait.
+        icon:Hide()
         icon:SetPoint("CENTER")
         glass:SetSize(30, 30)
         glass:SetPoint("CENTER", frame, "BOTTOM", 0, 10)
@@ -191,12 +194,33 @@ local function ApplyMode()
         else
             frame:SetPoint("CENTER", 0, -160)
         end
+        icon:Show()
         icon:SetSize(ICON_SIZE, ICON_SIZE)
         icon:SetPoint("CENTER")
         glass:SetSize(GLASS_SIZE, GLASS_SIZE)
         glass:SetPoint("CENTER")
         timer:SetFontObject(timerFont)
         nameText:Show()
+    end
+end
+
+-- In portrait mode the spell icon replaces the portrait itself for the
+-- duration of the cast; the character's face is restored when it ends.
+local portraitSwapped = false
+
+local function SwapPortrait(texture)
+    if SexyCastbarDB.mode == "portrait" and PlayerPortrait then
+        PlayerPortrait:SetTexture(texture or FALLBACK_ICON)
+        PlayerPortrait:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        portraitSwapped = true
+    end
+end
+
+local function RestorePortrait()
+    if portraitSwapped then
+        portraitSwapped = false
+        PlayerPortrait:SetTexCoord(0, 1, 0, 1)
+        SetPortraitTexture(PlayerPortrait, "player")
     end
 end
 
@@ -209,9 +233,11 @@ local function StartDisplay(name, texture, startMS, endMS, channel, castID)
         channel = channel,
         castID = castID,
         gradient = channel and CHANNEL_GRADIENT or CAST_GRADIENT,
+        texture = texture,
     }
 
     icon:SetTexture(texture or FALLBACK_ICON)
+    SwapPortrait(texture)
     local c0 = state.gradient[1]
     ring:SetVertexColor(c0[1], c0[2], c0[3])
     nameText:SetText(name or "")
@@ -230,6 +256,7 @@ end
 function Finish(kind)
     if not state then return end
     state = nil
+    RestorePortrait()
     cooldown:Clear()
     timer:SetText("")
     if kind ~= "quiet" then
@@ -379,6 +406,15 @@ SlashCmdList["SEXYCASTBAR"] = function(msg)
             SetUnlocked(false)
         end
         ApplyMode()
+        -- Toggling mid-cast: move the icon between our texture and the
+        -- portrait to match the new mode.
+        if state then
+            if SexyCastbarDB.mode == "portrait" then
+                SwapPortrait(state.texture)
+            else
+                RestorePortrait()
+            end
+        end
     elseif SexyCastbarDB.mode == "portrait" then
         Print("Anchored to the player portrait - /scb portrait detaches, /scb test previews.")
     else
