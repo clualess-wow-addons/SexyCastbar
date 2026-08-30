@@ -75,10 +75,11 @@ local function BuildFrame()
 
     -- Counterclockwise sweep. The Cooldown widget only animates clockwise
     -- (SetRotation moves the start, never the direction), so the consumed
-    -- area is two black half-ring textures behind static half masks,
-    -- rotated in lockstep: each mask clips its rotating half to a wedge,
-    -- and their union grows counterclockwise from 12 o'clock with no
-    -- phase-switching needed.
+    -- area is two black half-ring textures behind static half masks. First
+    -- half of the cast: the left texture rotates, growing a wedge from
+    -- 12 o'clock down the left side (the right one is parked over the left
+    -- mask, fully clipped). Second half: the left parks fully dark and the
+    -- right rotates up its own side.
     local maskL = frame:CreateMaskTexture()
     maskL:SetTexture(MEDIA .. "halfmask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     maskL:SetAllPoints()
@@ -158,10 +159,17 @@ local function BuildFrame()
         if p < 0 then p = 0 elseif p > 1 then p = 1 end
 
         -- The sweep rotates every frame so it stays smooth; text and
-        -- colors below keep the 0.05s throttle.
+        -- colors below keep the 0.05s throttle. Rotation 0 parks a half
+        -- exactly on the left mask: invisible for the right texture,
+        -- fully dark for the left one.
         local rot = math.rad(p * 360 - 180)
-        darkL:SetRotation(rot)
-        darkR:SetRotation(rot)
+        if p <= 0.5 then
+            darkL:SetRotation(rot)
+            darkR:SetRotation(0)
+        else
+            darkL:SetRotation(0)
+            darkR:SetRotation(rot)
+        end
         hand:SetRotation(math.rad(p * 360))
 
         self.acc = (self.acc or 0) + elapsed
@@ -202,13 +210,16 @@ local function ApplyMode()
     glass:ClearAllPoints()
     if portraitMode then
         frame:SetPoint("CENTER", PlayerPortrait, "CENTER")
+        -- Sized so the ring rides the portrait's inner perimeter instead
+        -- of wrapping around the outside.
+        frame:SetSize(62, 62)
         -- Our own icon stays hidden: the spell icon is written into the
         -- PlayerPortrait texture itself for the cast (see SwapPortrait),
         -- rendering under the frame art like a native portrait.
         icon:Hide()
         icon:SetPoint("CENTER")
-        glass:SetSize(30, 30)
-        glass:SetPoint("CENTER", frame, "BOTTOM", 0, 10)
+        glass:SetSize(26, 26)
+        glass:SetPoint("CENTER", frame, "BOTTOM", 0, 4)
         timer:SetFontObject(timerFontSmall)
         nameText:Hide()
     else
@@ -218,6 +229,7 @@ local function ApplyMode()
         else
             frame:SetPoint("CENTER", 0, -160)
         end
+        frame:SetSize(RING_SIZE, RING_SIZE)
         icon:Show()
         icon:SetSize(ICON_SIZE, ICON_SIZE)
         icon:SetPoint("CENTER")
@@ -267,7 +279,7 @@ local function StartDisplay(name, texture, startMS, endMS, channel, castID)
     timer:SetTextColor(1, 1, 1)
     timer:SetText("")
     darkL:SetRotation(math.rad(-180))
-    darkR:SetRotation(math.rad(-180))
+    darkR:SetRotation(0)
     hand:SetRotation(0)
     hand:Show()
 
@@ -321,7 +333,7 @@ local function SetUnlocked(on)
     if on then
         state = nil
         darkL:SetRotation(math.rad(-180))
-        darkR:SetRotation(math.rad(-180))
+        darkR:SetRotation(0)
         hand:Hide()
         icon:SetTexture(HEARTH_ICON)
         ring:SetVertexColor(COLOR_UNLOCKED[1], COLOR_UNLOCKED[2], COLOR_UNLOCKED[3])
