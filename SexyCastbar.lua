@@ -9,7 +9,7 @@ local ADDON_NAME = ...
 
 local RING_SIZE = 96
 local ICON_SIZE = 64
-local GLASS_SIZE = 72
+local GLASS_SIZE = 42 -- a small badge behind the countdown, not an icon dimmer
 local MEDIA = "Interface\\AddOns\\SexyCastbar\\media\\"
 local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local FALLBACK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
@@ -57,8 +57,8 @@ local function BuildFrame()
         frame:SetPoint("CENTER", 0, -160)
     end
 
-    -- Spell icon under a smoked-glass disc; the glass dims the icon so the
-    -- countdown stays readable on top of it.
+    -- Spell icon shown at full brightness; a small smoked-glass badge sits
+    -- behind just the countdown so the icon stays clearly visible.
     icon = frame:CreateTexture(nil, "BACKGROUND", nil, -2)
     icon:SetSize(ICON_SIZE, ICON_SIZE)
     icon:SetPoint("CENTER")
