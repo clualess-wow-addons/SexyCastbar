@@ -18,8 +18,8 @@ local HEARTH_ICON = "Interface\\Icons\\INV_Misc_Rune_01"
 -- The ring's color lerps across the cast: casts run green through gold
 -- to red as completion nears; channels cool from teal to blue as they
 -- drain.
-local CAST_GRADIENT = { { 0.4, 1, 0.35 }, { 1, 0.35, 0.15 } }
-local CHANNEL_GRADIENT = { { 0.3, 0.9, 0.8 }, { 0.25, 0.45, 1 } }
+local CAST_GRADIENT = { { 0, 1, 0.1 }, { 1, 0.1, 0 } }
+local CHANNEL_GRADIENT = { { 0, 1, 0.9 }, { 0.1, 0.4, 1 } }
 local COLOR_UNLOCKED = { 1, 0.8, 0.25 }
 local COLOR_FAIL = { 1, 0.2, 0.2 }
 local COLOR_DONE = { 1, 1, 1 }
