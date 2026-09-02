@@ -429,6 +429,15 @@ events:SetScript("OnEvent", function(self, event, arg1, castGUID)
     end
 end)
 
+local loginFrame = CreateFrame("Frame")
+loginFrame:RegisterEvent("PLAYER_LOGIN")
+loginFrame:SetScript("OnEvent", function()
+    -- print() skips the client's {square}->icon chat substitution, so apply it ourselves
+    C_Timer.After(3, function()
+        print(C_ChatInfo.ReplaceIconAndGroupExpressions("{square} |cffffd200SexyCastbar:|r |cff69ccf0Found a bug? Report it on GitHub (PRs welcome) - github.com/clualess-wow-addons/SexyCastbar|r"))
+    end)
+end)
+
 SLASH_SEXYCASTBAR1 = "/sexycastbar"
 SLASH_SEXYCASTBAR2 = "/scb"
 SlashCmdList["SEXYCASTBAR"] = function(msg)
