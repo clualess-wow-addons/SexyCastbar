@@ -15,11 +15,9 @@ local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local FALLBACK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local HEARTH_ICON = "Interface\\Icons\\INV_Misc_Rune_01"
 
--- The ring's color lerps across the cast: casts run green through gold
--- to red as completion nears; channels cool from teal to blue as they
--- drain.
-local CAST_GRADIENT = { { 0, 1, 0.1 }, { 1, 0.1, 0 } }
-local CHANNEL_GRADIENT = { { 0, 1, 0.9 }, { 0.1, 0.4, 1 } }
+-- One loud electric blue for the ring, casts and channels alike; the
+-- blink carries the "in progress" signal, progress is the sweep itself.
+local COLOR_RING = { 0.15, 0.75, 1 }
 local COLOR_UNLOCKED = { 1, 0.8, 0.25 }
 local COLOR_FAIL = { 1, 0.2, 0.2 }
 local COLOR_DONE = { 1, 1, 1 }
@@ -188,12 +186,6 @@ local function BuildFrame()
         if self.acc < 0.05 then return end
         self.acc = 0
 
-        local c0, c1 = state.gradient[1], state.gradient[2]
-        ring:SetVertexColor(
-            c0[1] + (c1[1] - c0[1]) * p,
-            c0[2] + (c1[2] - c0[2]) * p,
-            c0[3] + (c1[3] - c0[3]) * p)
-
         if remaining >= 10 then
             timer:SetText(string.format("%d", remaining))
         else
@@ -279,14 +271,12 @@ local function StartDisplay(name, texture, startMS, endMS, channel, castID)
         duration = duration,
         channel = channel,
         castID = castID,
-        gradient = channel and CHANNEL_GRADIENT or CAST_GRADIENT,
         texture = texture,
     }
 
     icon:SetTexture(texture or FALLBACK_ICON)
     SwapPortrait(texture)
-    local c0 = state.gradient[1]
-    ring:SetVertexColor(c0[1], c0[2], c0[3])
+    ring:SetVertexColor(COLOR_RING[1], COLOR_RING[2], COLOR_RING[3])
     nameText:SetText(name or "")
     timer:SetTextColor(1, 1, 1)
     timer:SetText("")

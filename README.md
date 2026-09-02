@@ -9,7 +9,7 @@ Everything the standard cast bar would show — spells, Hearthstone, opening
 quest items and chests, channels — shows here instead; the default bar is
 disabled while the addon is loaded.
 
-- **Gold ring** for casts, **teal ring** for channels.
+- **Electric blue ring**, blinking for the whole duration of the cast.
 - The countdown turns gold in the final quarter of the cast.
 - **White blip** when a cast completes; **red flash** when it's interrupted
   or cancelled. Clipping a channel early just fades out quietly.
